@@ -1,8 +1,6 @@
-
-# backend/app.py
 from fastapi import FastAPI, HTTPException, Query
 from typing import List, Optional, Tuple
-from data_loader import (
+from .data_loader import (
     get_countries_df,
     get_indicators_df,
     get_indicator_data_df,
@@ -67,4 +65,6 @@ def forecast(
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
+    # Quando executado diretamente, app-dir já é 'backend', imports relativos funcionarão
     uvicorn.run("backend.app:app", host="0.0.0.0", port=8000, reload=True)
+
