@@ -1,7 +1,6 @@
 import requests
 import sqlite3
 import pandas as pd
-import pandas as pd
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 
@@ -112,6 +111,18 @@ def get_multiple_indicators_df(
         df = get_indicator_data_df(country_code, ind, date_from, date_to, format)
         dfs.append(df)
     return pd.concat(dfs, ignore_index=True)
+
+def forecast_indicator(
+    country_code: str,
+    indicator_code: str,
+    years_ahead: int
+) -> pd.DataFrame:
+    """
+    Stub de forecast: ainda não implementado.
+    A FastAPI tratará NotImplementedError e retornará 501.
+    """
+    raise NotImplementedError("Forecast not implemented yet")
+
 
 if __name__ == "__main__":
     init_db()
