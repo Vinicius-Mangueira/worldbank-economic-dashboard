@@ -1,6 +1,7 @@
+# File: backend/app.py
 from fastapi import FastAPI, HTTPException, Query
 from typing import List, Optional, Tuple
-from data_loader import (
+from backend.data_loader import (
     get_countries_df,
     get_indicators_df,
     get_indicator_data_df,
@@ -31,7 +32,7 @@ async def load_caches():
         # Load and cache countries
         df_countries = get_countries_df()
         _countries_cache = df_countries.to_dict(orient="records")
-        print("Cache loaded:", len(_countries_cache), "countries and", len(_indicators_cache), "indicators")
+        print(f"Cache loaded: {_countries_cache.__len__()} countries and {_indicators_cache.__len__()} indicators")
     except Exception as e:
         # Log but do not crash startup
         print(f"Error preloading cache: {e}")
@@ -96,5 +97,5 @@ def forecast(
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
-
+    # Run with: uvicorn backend.app:app
+    uvicorn.run("backend.app:app", host="0.0.0.0", port=8000, reload=True)
