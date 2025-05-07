@@ -2,10 +2,10 @@
 
 import axios from 'axios';
 
-// Create an axios instance with a 15-second timeout and base URL
+// Create an axios instance with a 20-second timeout and base URL
 const apiClient = axios.create({
-  baseURL: '/',     // Relies on the proxy in package.json pointing to http://localhost:8000
-  timeout: 15000,   // 15 seconds timeout for slower endpoints
+  baseURL: '/',       // Relies on the proxy in package.json pointing to http://localhost:8000
+  timeout: 20000,     // 20 seconds timeout for slower endpoints
 });
 
 /**
@@ -13,9 +13,14 @@ const apiClient = axios.create({
  * @returns {Promise<Array<{value: string, label: string}>>}
  */
 export async function fetchCountries() {
-  const res = await apiClient.get('/countries');
-  // Map API response to { value, label } format for react-select
-  return res.data.map((c) => ({ value: c.code, label: c.name }));
+  try {
+    const res = await apiClient.get('/countries');
+    // Map API response to { value, label } format for react-select
+    return res.data.map((c) => ({ value: c.code, label: c.name }));
+  } catch (err) {
+    console.error('Error in fetchCountries:', err);
+    throw err;
+  }
 }
 
 /**
@@ -23,9 +28,14 @@ export async function fetchCountries() {
  * @returns {Promise<Array<{value: string, label: string}>>}
  */
 export async function fetchIndicators() {
-  const res = await apiClient.get('/indicators');
-  // Map API response to { value, label } format for react-select
-  return res.data.map((i) => ({ value: i.code, label: i.name }));
+  try {
+    const res = await apiClient.get('/indicators');
+    // Map API response to { value, label } format for react-select
+    return res.data.map((i) => ({ value: i.code, label: i.name }));
+  } catch (err) {
+    console.error('Error in fetchIndicators:', err);
+    throw err;
+  }
 }
 
 /**
@@ -37,16 +47,21 @@ export async function fetchIndicators() {
  * @returns {Promise<Array<{year: number, value: number}>>}
  */
 export async function fetchData(countryCode, indicatorCode, startYear, endYear) {
-  const res = await apiClient.get('/data', {
-    params: {
-      country: countryCode,
-      indicator: indicatorCode,
-      start: startYear,
-      end: endYear,
-    },
-  });
-  // Expecting format: [{ year: 2000, value: 1000 }, …]
-  return res.data;
+  try {
+    const res = await apiClient.get('/data', {
+      params: {
+        country: countryCode,
+        indicator: indicatorCode,
+        start: startYear,
+        end: endYear,
+      },
+    });
+    // Expecting format: [{ year: 2000, value: 1000 }, …]
+    return res.data;
+  } catch (err) {
+    console.error('Error in fetchData:', err);
+    throw err;
+  }
 }
 
 /**
@@ -57,14 +72,18 @@ export async function fetchData(countryCode, indicatorCode, startYear, endYear) 
  * @returns {Promise<Array<{year: number, forecast: number}>>}
  */
 export async function fetchForecast(countryCode, indicatorCode, yearsAhead) {
-  const res = await apiClient.get('/forecast', {
-    params: {
-      country: countryCode,
-      indicator: indicatorCode,
-      years_ahead: yearsAhead,
-    },
-  });
-  // Expecting format: [{ year: 2023, forecast: 1100 }, …]
-  return res.data;
+  try {
+    const res = await apiClient.get('/forecast', {
+      params: {
+        country: countryCode,
+        indicator: indicatorCode,
+        years_ahead: yearsAhead,
+      },
+    });
+    // Expecting format: [{ year: 2023, forecast: 1100 }, …]
+    return res.data;
+  } catch (err) {
+    console.error('Error in fetchForecast:', err);
+    throw err;
+  }
 }
-
