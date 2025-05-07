@@ -7,7 +7,7 @@ import LineChart from '../components/LineChart';
 import { fetchCountries, fetchIndicators, fetchData, fetchForecast } from '../api';
 
 export default function Dashboard() {
-  // State hooks for selectors, data, loading, and error
+  // State hooks for selectors, data, loading, and messages
   const [countries, setCountries] = useState([]);
   const [indicators, setIndicators] = useState([]);
   const [country, setCountry] = useState(null);
@@ -16,7 +16,7 @@ export default function Dashboard() {
   const [data, setData] = useState([]);
   const [forecast, setForecast] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [message, setMessage] = useState(''); // shows error or no-data
 
   // Load country and indicator options on mount
   useEffect(() => {
@@ -32,29 +32,58 @@ export default function Dashboard() {
   // Fetch data when selections or range change
   useEffect(() => {
     if (country && indicator) {
-      setErrorMessage('');           // Clear previous errors
+      setMessage(''); // clear previous messages
       setLoading(true);
-      fetchData(country.value, indicator.value, range.start, range.end)
-        .then(setData)
-        .catch((err) => {
+
+      (async () => {
+        try {
+          const result = await fetchData(
+            country.value,
+            indicator.value,
+            range.start,
+            range.end
+          );
+
+          if (result.length === 0) {
+            setData([]);
+            setMessage('No data available for the selected parameters.');
+          } else {
+            setData(result);
+          }
+        } catch (err) {
           console.error('Error fetching data:', err);
-          setErrorMessage('Failed to load data. Please try again.');
-        })
-        .finally(() => setLoading(false));
+          setData([]);
+          setMessage(`Failed to load data: ${err.message}`);
+        } finally {
+          setLoading(false);
+        }
+      })();
     }
   }, [country, indicator, range]);
 
   // Handle forecast generation via button
   const handleForecast = async () => {
     if (!country || !indicator) return;
-    setErrorMessage('');
+    setMessage('');
     setLoading(true);
+
     try {
-      const fc = await fetchForecast(country.value, indicator.value, 5);
-      setForecast(fc);
+      const fc = await fetchForecast(
+        country.value,
+        indicator.value,
+        5
+      );
+
+      if (fc.length === 0) {
+        setForecast([]);
+        setMessage('No forecast data available.');
+      } else {
+        setForecast(fc);
+      }
     } catch (err) {
       console.error('Error generating forecast:', err);
-      setErrorMessage('Failed to generate forecast. Please try again.');
+      setForecast([]);
+      setMessage(`Failed to generate forecast: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -109,21 +138,21 @@ export default function Dashboard() {
         {loading ? 'Loading...' : 'Generate 5-Year Forecast'}
       </button>
 
-      {/* Error message */}
-      {errorMessage && (
+      {/* Message for errors or no-data */}
+      {message && (
         <div style={{ color: 'red', marginBottom: 20 }}>
-          {errorMessage}
+          {message}
         </div>
       )}
 
-      {/* Render main data chart */}
+      {/* Render main data chart if data exists */}
       {data.length > 0 && !loading && (
         <div style={{ marginBottom: 40 }}>
           <LineChart data={data.map((d) => ({ year: d.year, indicator_value: d.value }))} />
         </div>
       )}
 
-      {/* Render forecast chart */}
+      {/* Render forecast chart if forecast exists */}
       {forecast.length > 0 && !loading && (
         <div>
           <LineChart data={forecast.map((d) => ({ year: d.year, indicator_value: d.forecast }))} />
@@ -132,3 +161,4 @@ export default function Dashboard() {
     </div>
   );
 }
+
