@@ -1,25 +1,70 @@
-// frontend/src/api.js
+// src/api.js
+
 import axios from 'axios';
 
-// Usa o proxy do package.json para apontar a "/" ao seu FastAPI em :8000
-const api = axios.create({
-  baseURL: '/',
-  timeout: 5000,
+// Create an axios instance with a 15-second timeout and base URL
+const apiClient = axios.create({
+  baseURL: '/',     // Relies on the proxy in package.json pointing to http://localhost:8000
+  timeout: 15000,   // 15 seconds timeout for slower endpoints
 });
 
-// exporta funções para cada endpoint
-export const fetchCountries = () =>
-  api.get('/countries').then(res => res.data);
+/**
+ * Fetch the list of countries from the backend.
+ * @returns {Promise<Array<{value: string, label: string}>>}
+ */
+export async function fetchCountries() {
+  const res = await apiClient.get('/countries');
+  // Map API response to { value, label } format for react-select
+  return res.data.map((c) => ({ value: c.code, label: c.name }));
+}
 
-export const fetchIndicators = () =>
-  api.get('/indicators').then(res => res.data);
+/**
+ * Fetch the list of indicators from the backend.
+ * @returns {Promise<Array<{value: string, label: string}>>}
+ */
+export async function fetchIndicators() {
+  const res = await apiClient.get('/indicators');
+  // Map API response to { value, label } format for react-select
+  return res.data.map((i) => ({ value: i.code, label: i.name }));
+}
 
-export const fetchData = (country, indicator, start, end) =>
-  api
-    .get('/data', { params: { country, indicator, start, end } })
-    .then(res => res.data);
+/**
+ * Fetch historical data for a given country and indicator.
+ * @param {string} countryCode - ISO code of the country.
+ * @param {string} indicatorCode - World Bank indicator code.
+ * @param {number} startYear - Start year for data.
+ * @param {number} endYear - End year for data.
+ * @returns {Promise<Array<{year: number, value: number}>>}
+ */
+export async function fetchData(countryCode, indicatorCode, startYear, endYear) {
+  const res = await apiClient.get('/data', {
+    params: {
+      country: countryCode,
+      indicator: indicatorCode,
+      start: startYear,
+      end: endYear,
+    },
+  });
+  // Expecting format: [{ year: 2000, value: 1000 }, …]
+  return res.data;
+}
 
-export const fetchForecast = (country, indicator, yearsAhead = 5) =>
-  api
-    .get('/forecast', { params: { country, indicator, years_ahead: yearsAhead } })
-    .then(res => res.data);
+/**
+ * Fetch forecast data for a given country and indicator.
+ * @param {string} countryCode - ISO code of the country.
+ * @param {string} indicatorCode - World Bank indicator code.
+ * @param {number} yearsAhead - Number of years to forecast.
+ * @returns {Promise<Array<{year: number, forecast: number}>>}
+ */
+export async function fetchForecast(countryCode, indicatorCode, yearsAhead) {
+  const res = await apiClient.get('/forecast', {
+    params: {
+      country: countryCode,
+      indicator: indicatorCode,
+      years_ahead: yearsAhead,
+    },
+  });
+  // Expecting format: [{ year: 2023, forecast: 1100 }, …]
+  return res.data;
+}
+
