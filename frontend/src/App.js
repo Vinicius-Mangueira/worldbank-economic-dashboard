@@ -1,6 +1,13 @@
+// src/App.js
 import React from "react";
 import Dashboard from "./pages/Dashboard";
 
-export default function App() {
-  return <Dashboard />;
+function App() {
+  return (
+    <div>
+      <Dashboard />
+    </div>
+  );
 }
+
+export default App;
