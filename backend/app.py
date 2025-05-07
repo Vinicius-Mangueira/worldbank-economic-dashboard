@@ -13,8 +13,32 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Caches to store preloaded data
+_indicators_cache = None
+_countries_cache = None
+
+@app.on_event("startup")
+async def load_caches():
+    """
+    Preload countries and indicators once at startup
+    to serve quickly from memory.
+    """
+    global _indicators_cache, _countries_cache
+    try:
+        # Load and cache indicators
+        df_ind = get_indicators_df()
+        _indicators_cache = df_ind.to_dict(orient="records")
+        # Load and cache countries
+        df_countries = get_countries_df()
+        _countries_cache = df_countries.to_dict(orient="records")
+    except Exception as e:
+        # Log but do not crash startup
+        print(f"Error preloading cache: {e}")
+
 @app.get("/countries", response_model=List[dict])
 def countries():
+    if _countries_cache is not None:
+        return _countries_cache
     try:
         df = get_countries_df()
         return df.to_dict(orient="records")
@@ -23,6 +47,8 @@ def countries():
 
 @app.get("/indicators", response_model=List[dict])
 def indicators():
+    if _indicators_cache is not None:
+        return _indicators_cache
     try:
         df = get_indicators_df()
         return df.to_dict(orient="records")
@@ -65,6 +91,6 @@ def forecast(
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
-    # Quando executado diretamente, app-dir já é 'backend', imports relativos funcionarão
+    # When run directly, imports work from the backend folder
     uvicorn.run("backend.app:app", host="0.0.0.0", port=8000, reload=True)
 
