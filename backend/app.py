@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Query
 from typing import List, Optional, Tuple
-from .data_loader import (
+from data_loader import (
     get_countries_df,
     get_indicators_df,
     get_indicator_data_df,
@@ -14,8 +14,8 @@ app = FastAPI(
 )
 
 # Caches to store preloaded data
-_indicators_cache = None
-_countries_cache = None
+_indicators_cache: Optional[List[dict]] = None
+_countries_cache: Optional[List[dict]] = None
 
 @app.on_event("startup")
 async def load_caches():
@@ -31,12 +31,14 @@ async def load_caches():
         # Load and cache countries
         df_countries = get_countries_df()
         _countries_cache = df_countries.to_dict(orient="records")
+        print("Cache loaded:", len(_countries_cache), "countries and", len(_indicators_cache), "indicators")
     except Exception as e:
         # Log but do not crash startup
         print(f"Error preloading cache: {e}")
 
 @app.get("/countries", response_model=List[dict])
 def countries():
+    """Return the list of countries, cached if available."""
     if _countries_cache is not None:
         return _countries_cache
     try:
@@ -47,6 +49,7 @@ def countries():
 
 @app.get("/indicators", response_model=List[dict])
 def indicators():
+    """Return the list of indicators, cached if available."""
     if _indicators_cache is not None:
         return _indicators_cache
     try:
@@ -57,11 +60,12 @@ def indicators():
 
 @app.get("/data", response_model=List[dict])
 def data(
-    country: str = Query(...),
-    indicator: str = Query(...),
-    start: int = Query(2000),
-    end: int = Query(2022)
+    country: str = Query(..., description="ISO3 country code"),
+    indicator: str = Query(..., description="Indicator code"),
+    start: int = Query(2000, description="Start year"),
+    end: int = Query(2022, description="End year")
 ):
+    """Return time series data for a given country and indicator."""
     try:
         df = get_indicator_data_df(country, indicator, start, end)
         return df.to_dict(orient="records")
@@ -72,13 +76,14 @@ def data(
 
 @app.get("/forecast", response_model=List[dict])
 def forecast(
-    country: str = Query(...),
-    indicator: str = Query(...),
-    start: int = Query(1960),
-    end: Optional[int] = Query(None),
-    years_ahead: int = Query(5),
-    arima_order: Optional[Tuple[int,int,int]] = Query((1,1,1))
+    country: str = Query(..., description="ISO3 country code"),
+    indicator: str = Query(..., description="Indicator code"),
+    start: int = Query(1960, description="Start year for historical fit"),
+    end: Optional[int] = Query(None, description="End year for historical fit"),
+    years_ahead: int = Query(5, description="Years to forecast ahead"),
+    arima_order: Optional[Tuple[int,int,int]] = Query((1,1,1), description="ARIMA order parameters (p,d,q)")
 ):
+    """Return forecast data based on ARIMA model for a given country and indicator."""
     try:
         from datetime import datetime
         if end is None:
@@ -91,6 +96,5 @@ def forecast(
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
-    # When run directly, imports work from the backend folder
-    uvicorn.run("backend.app:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
 
