@@ -7,7 +7,6 @@ import LineChart from '../components/LineChart';
 import { fetchCountries, fetchIndicators, fetchData, fetchForecast } from '../api';
 
 export default function Dashboard() {
-  // State hooks for selectors, data, loading, and messages
   const [countries, setCountries] = useState([]);
   const [indicators, setIndicators] = useState([]);
   const [country, setCountry] = useState(null);
@@ -16,84 +15,71 @@ export default function Dashboard() {
   const [data, setData] = useState([]);
   const [forecast, setForecast] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState(''); // shows error or no-data
+  const [message, setMessage] = useState('');
 
-  // Load country and indicator options on mount
+  // Load country and indicator options once
   useEffect(() => {
     fetchCountries()
-      .then(setCountries)
-      .catch((err) => console.error('Error loading countries:', err));
+      .then(setCountries)  // already in {value,label} format
+      .catch(err => console.error('Error loading countries:', err));
 
     fetchIndicators()
-      .then(setIndicators)
-      .catch((err) => console.error('Error loading indicators:', err));
+      .then(setIndicators)  // already in {value,label} format
+      .catch(err => console.error('Error loading indicators:', err));
   }, []);
 
-  // Fetch data when selections or range change
+  // Fetch data on change of selection or range
   useEffect(() => {
-    if (country && indicator) {
-      setMessage(''); // clear previous messages
-      setLoading(true);
-
-      (async () => {
-        try {
-          const result = await fetchData(
-            country.value,
-            indicator.value,
-            range.start,
-            range.end
-          );
-
-          if (result.length === 0) {
-            setData([]);
-            setMessage('No data available for the selected parameters.');
-          } else {
-            setData(result);
-          }
-        } catch (err) {
-          console.error('Error fetching data:', err);
-          setData([]);
-          setMessage(`Failed to load data: ${err.message}`);
-        } finally {
-          setLoading(false);
-        }
-      })();
-    }
-  }, [country, indicator, range]);
-
-  // Handle forecast generation via button
-  const handleForecast = async () => {
     if (!country || !indicator) return;
+
     setMessage('');
     setLoading(true);
 
-    try {
-      const fc = await fetchForecast(
-        country.value,
-        indicator.value,
-        5
-      );
+    fetchData(country.value, indicator.value, range.start, range.end)
+      .then(result => {
+        if (result.length === 0) {
+          setData([]);
+          setMessage('No data available for the selected parameters.');
+        } else {
+          setData(result);
+        }
+      })
+      .catch(err => {
+        console.error('Error fetching data:', err);
+        setData([]);
+        setMessage(`Failed to load data: ${err.message}`);
+      })
+      .finally(() => setLoading(false));
+  }, [country, indicator, range]);
 
-      if (fc.length === 0) {
+  // Handle 5-year forecast
+  const handleForecast = () => {
+    if (!country || !indicator) return;
+
+    setMessage('');
+    setLoading(true);
+
+    fetchForecast(country.value, indicator.value, 5)
+      .then(fc => {
+        if (fc.length === 0) {
+          setForecast([]);
+          setMessage('No forecast data available.');
+        } else {
+          setForecast(fc);
+        }
+      })
+      .catch(err => {
+        console.error('Error generating forecast:', err);
         setForecast([]);
-        setMessage('No forecast data available.');
-      } else {
-        setForecast(fc);
-      }
-    } catch (err) {
-      console.error('Error generating forecast:', err);
-      setForecast([]);
-      setMessage(`Failed to generate forecast: ${err.message}`);
-    } finally {
-      setLoading(false);
-    }
+        setMessage(`Failed to generate forecast: ${err.message}`);
+      })
+      .finally(() => setLoading(false));
   };
 
   return (
     <div style={{ padding: 20 }}>
       <h1>📊 Economic Dashboard</h1>
 
-      {/* Country and Indicator Selectors */}
       <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
         <CountrySelector
           options={countries}
@@ -107,14 +93,13 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Date range inputs */}
-      <div style={{ marginBottom: 20, display: 'flex', gap: 16 }}>
+      <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
         <label>
           From:
           <input
             type="number"
             value={range.start}
-            onChange={(e) => setRange((r) => ({ ...r, start: +e.target.value }))}
+            onChange={e => setRange(r => ({ ...r, start: +e.target.value }))}
             style={{ width: 80, marginLeft: 8 }}
           />
         </label>
@@ -123,42 +108,40 @@ export default function Dashboard() {
           <input
             type="number"
             value={range.end}
-            onChange={(e) => setRange((r) => ({ ...r, end: +e.target.value }))}
+            onChange={e => setRange(r => ({ ...r, end: +e.target.value }))}
             style={{ width: 80, marginLeft: 8 }}
           />
         </label>
       </div>
 
-      {/* Forecast button and loading state */}
       <button
         onClick={handleForecast}
         disabled={!country || !indicator || loading}
         style={{ marginBottom: 20 }}
       >
         {loading ? 'Loading...' : 'Generate 5-Year Forecast'}
-      </button>
+      </
+      button>
 
-      {/* Message for errors or no-data */}
       {message && (
         <div style={{ color: 'red', marginBottom: 20 }}>
           {message}
         </div>
       )}
 
-      {/* Render main data chart if data exists */}
       {data.length > 0 && !loading && (
-        <div style={{ marginBottom: 40 }}>
-          <LineChart data={data.map((d) => ({ year: d.year, indicator_value: d.value }))} />
-        </div>
+        <LineChart
+          data={data.map(d => ({ year: d.year, indicator_value: d.value }))}
+          title="Historical Data"
+        />
       )}
 
-      {/* Render forecast chart if forecast exists */}
       {forecast.length > 0 && !loading && (
-        <div>
-          <LineChart data={forecast.map((d) => ({ year: d.year, indicator_value: d.forecast }))} />
-        </div>
+        <LineChart
+          data={forecast.map(d => ({ year: d.year, indicator_value: d.forecast }))}
+          title="5-Year Forecast"
+        />
       )}
     </div>
   );
 }
-

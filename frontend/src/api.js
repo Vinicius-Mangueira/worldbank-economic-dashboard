@@ -16,7 +16,7 @@ export async function fetchCountries() {
   try {
     const res = await apiClient.get('/countries');
     // Map API response to { value, label } format for react-select
-    return res.data.map((c) => ({ value: c.code, label: c.name }));
+    return res.data.map((c) => ({ value: c.id, label: c.name }));
   } catch (err) {
     console.error('Error in fetchCountries:', err);
     throw err;
@@ -31,7 +31,7 @@ export async function fetchIndicators() {
   try {
     const res = await apiClient.get('/indicators');
     // Map API response to { value, label } format for react-select
-    return res.data.map((i) => ({ value: i.code, label: i.name }));
+    return res.data.map((i) => ({ value: i.id, label: i.name }));
   } catch (err) {
     console.error('Error in fetchIndicators:', err);
     throw err;
