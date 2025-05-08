@@ -1,4 +1,3 @@
-
 # File: backend/app.py
 import logging
 from fastapi import FastAPI, HTTPException, Query
@@ -12,8 +11,7 @@ from backend.data_loader import (
 )
 import uvicorn
 
-# Configuração de logging
-logging.basicConfig(level=logging.INFO)
+# Configuração de logging\logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
@@ -25,7 +23,7 @@ app = FastAPI(
 _indicators_cache: Optional[List[dict]] = None
 _countries_cache: Optional[List[dict]] = None
 _cache_timestamp: Optional[float] = None
-_CACHE_TTL = 3600  # segundos
+_CACHE_TTL = 3600  # seconds
 
 @app.on_event("startup")
 async def load_caches():
@@ -48,7 +46,6 @@ async def _refresh_caches():
         logger.info(f"Cache loaded: {len(_countries_cache)} countries and {len(_indicators_cache)} indicators")
     except Exception as e:
         logger.error(f"Error preloading cache: {e}")
-        # propagate or decide fallback
 
 def _ensure_cache_valid():
     import time
@@ -62,7 +59,7 @@ def countries():
     try:
         _ensure_cache_valid()
         return _countries_cache or []
-    except Exception as e:
+    except Exception:
         logger.exception("Failed to fetch countries cache")
         raise HTTPException(status_code=500, detail="Erro ao obter lista de países.")
 
@@ -72,7 +69,7 @@ def indicators():
     try:
         _ensure_cache_valid()
         return _indicators_cache or []
-    except Exception as e:
+    except Exception:
         logger.exception("Failed to fetch indicators cache")
         raise HTTPException(status_code=500, detail="Erro ao obter lista de indicadores.")
 
@@ -130,4 +127,3 @@ def forecast(
 if __name__ == "__main__":
     # Run with: uvicorn backend.app:app --reload
     uvicorn.run("backend.app:app", host="0.0.0.0", port=8000, reload=True)
-
