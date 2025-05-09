@@ -1,7 +1,5 @@
-# File: backend/app.py
 import logging
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import JSONResponse
 from typing import List, Optional, Tuple
 from backend.data_loader import (
     get_countries_df,
@@ -11,7 +9,8 @@ from backend.data_loader import (
 )
 import uvicorn
 
-# Configuração de logging\logging.basicConfig(level=logging.INFO)
+# Logging setup
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
@@ -19,7 +18,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Caches with simple TTL
+# Simple TTL caches
 _indicators_cache: Optional[List[dict]] = None
 _countries_cache: Optional[List[dict]] = None
 _cache_timestamp: Optional[float] = None
@@ -28,7 +27,7 @@ _CACHE_TTL = 3600  # seconds
 @app.on_event("startup")
 async def load_caches():
     """
-    Preload countries and indicators once at startup
+    Preload countries and indicators at startup
     and refresh caches when TTL expires.
     """
     await _refresh_caches()
@@ -47,6 +46,7 @@ async def _refresh_caches():
     except Exception as e:
         logger.error(f"Error preloading cache: {e}")
 
+
 def _ensure_cache_valid():
     import time
     if _cache_timestamp is None or (time.time() - _cache_timestamp) > _CACHE_TTL:
@@ -61,7 +61,7 @@ def countries():
         return _countries_cache or []
     except Exception:
         logger.exception("Failed to fetch countries cache")
-        raise HTTPException(status_code=500, detail="Erro ao obter lista de países.")
+        raise HTTPException(status_code=500, detail="Failed to retrieve country list.")
 
 @app.get("/indicators", response_model=List[dict])
 def indicators():
@@ -71,7 +71,7 @@ def indicators():
         return _indicators_cache or []
     except Exception:
         logger.exception("Failed to fetch indicators cache")
-        raise HTTPException(status_code=500, detail="Erro ao obter lista de indicadores.")
+        raise HTTPException(status_code=500, detail="Failed to retrieve indicator list.")
 
 @app.get("/data", response_model=List[dict])
 def data(
@@ -82,11 +82,11 @@ def data(
 ):
     """Return time series data for a given country and indicator."""
     if start > end:
-        raise HTTPException(status_code=400, detail="Ano inicial não pode ser maior que ano final.")
+        raise HTTPException(status_code=400, detail="Start year cannot be greater than end year.")
     try:
         df = get_indicator_data_df(country, indicator, start, end)
         if df.empty:
-            raise HTTPException(status_code=404, detail="Dados não encontrados para os parâmetros informados.")
+            raise HTTPException(status_code=404, detail="No data found for the given parameters.")
         return df.to_dict(orient="records")
     except HTTPException:
         raise
@@ -95,34 +95,38 @@ def data(
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
         logger.exception("Unexpected error in /data")
-        raise HTTPException(status_code=500, detail="Erro interno ao processar dados.")
+        raise HTTPException(status_code=500, detail="Internal server error while processing data.")
 
 @app.get("/forecast", response_model=List[dict])
 def forecast(
     country: str = Query(..., min_length=3, max_length=3, description="ISO3 country code"),
     indicator: str = Query(..., min_length=1, description="Indicator code"),
-    start: int = Query(1960, ge=1900, le=2100, description="Start year for fit"),
-    end: Optional[int] = Query(None, ge=1900, le=2100, description="End year for fit"),
+    start: int = Query(1960, ge=1900, le=2100, description="Start year for model fitting"),
+    end: Optional[int] = Query(None, ge=1900, le=2100, description="End year for model fitting"),
     years_ahead: int = Query(5, ge=1, le=50, description="Years to forecast ahead"),
-    arima_order: Optional[Tuple[int,int,int]] = Query((1,1,1), description="ARIMA order parameters (p,d,q)")
+    arima_order: Optional[Tuple[int,int,int]] = Query((1,1,1), description="ARIMA order (p,d,q)")
 ):
-    """Return forecast data based on ARIMA model for a given country and indicator."""
+    """Return forecast data based on an ARIMA model for a given country and indicator."""
     try:
         from datetime import datetime
         if end is None:
             end = datetime.now().year
         if start > end:
-            raise HTTPException(status_code=400, detail="Ano inicial não pode ser maior que ano final.")
+            raise HTTPException(status_code=400, detail="Start year cannot be greater than end year.")
         df_fc = forecast_indicator(country, indicator, start, end, years_ahead, arima_order)
         return df_fc.to_dict(orient="records")
     except HTTPException:
         raise
     except ValueError as ve:
-        logger.warning(f"ValueError in /forecast: {ve}")
+        # Invalid parameters or insufficient data
         raise HTTPException(status_code=400, detail=str(ve))
+    except NotImplementedError:
+        # Forecast not yet implemented
+        raise HTTPException(status_code=501, detail="Forecast not implemented.")
     except Exception as e:
-        logger.exception("Unexpected error in /forecast")
-        raise HTTPException(status_code=500, detail="Erro interno ao gerar previsão.")
+        # Unexpected errors
+        logger.exception(f"Unexpected error in /forecast: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error during forecasting.")
 
 if __name__ == "__main__":
     # Run with: uvicorn backend.app:app --reload
