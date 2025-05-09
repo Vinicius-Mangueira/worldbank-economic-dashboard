@@ -1,28 +1,44 @@
 // src/components/IndicatorSelector.jsx
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Select from "react-select";
+import axios from "axios";
 
 /**
  * IndicatorSelector component
- * Receives options, value and onChange props from parent (Dashboard)
+ * Fetches indicator options from the backend and renders a dropdown
  */
-export default function IndicatorSelector({ options, value, onChange }) {
+export default function IndicatorSelector({ onChange }) {
+  const [options, setOptions] = useState([]);
+
+  useEffect(() => {
+    axios
+      .get("/indicators")
+      .then((res) => {
+        const opts = res.data.map((indicator) => ({
+          value: indicator.id,
+          label: indicator.name,
+        }));
+        setOptions(opts);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch indicators:", err);
+      });
+  }, []);
+
   return (
     <Select
-      options={options}     // Array of { value, label }
-      value={value}         // Current selected option
-      onChange={onChange}   // Callback to update parent state
+      options={options}           // Indicator options
+      onChange={onChange}         // Callback when selection changes
       placeholder="Select an indicator"
-      isClearable
+      isClearable                 // Allow clearing the selection
       aria-label="Indicator selector"
       styles={{
         container: (base) => ({
           ...base,
-          width: 300,
+          width: 300,             // Optional: consistent dropdown width
         }),
       }}
     />
   );
 }
-
