@@ -1,13 +1,18 @@
 import React from 'react';
 
-const ExportCSV = ({ data, fileName }) => {
+export default function ExportCSV({ data, fileName, disabled }) {
+  // Replacer para valores nulos
+  const replacer = (key, value) => (value === null ? '' : value);
+
   const downloadCSV = () => {
     if (!data || data.length === 0) return;
 
     const headers = Object.keys(data[0]);
     const csvRows = [
       headers.join(','), // Cabeçalhos
-      ...data.map(row => headers.map(field => JSON.stringify(row[field], replacer)).join(',')) // Dados
+      ...data.map(row =>
+        headers.map(field => JSON.stringify(row[field] ?? '', replacer)).join(',')
+      ) // Linhas de dados
     ];
 
     const csvContent = csvRows.join('\n');
@@ -21,13 +26,9 @@ const ExportCSV = ({ data, fileName }) => {
     document.body.removeChild(link);
   };
 
-  const replacer = (key, value) => (value === null ? '' : value); // Substitui valores nulos por string vazia
-
   return (
-    <button onClick={downloadCSV} style={{ marginBottom: 20 }}>
+    <button onClick={downloadCSV} disabled={disabled} style={{ marginRight: 16 }}>
       Exportar CSV
     </button>
   );
-};
-
-export default ExportCSV;
+}
