@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import CountrySelector from '../components/CountrySelector';
 import IndicatorSelector from '../components/IndicatorSelector';
 import LineChart from '../components/LineChart';
+import ExportCSV from '../components/ExportCSV';
 import { fetchCountries, fetchIndicators, fetchData, fetchForecast } from '../api';
 
 export default function Dashboard() {
@@ -17,18 +18,16 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
-  // Load country and indicator options once
   useEffect(() => {
     fetchCountries()
-      .then(setCountries)  // already in {value,label} format
+      .then(setCountries)
       .catch(err => console.error('Error loading countries:', err));
 
     fetchIndicators()
-      .then(setIndicators)  // already in {value,label} format
+      .then(setIndicators)
       .catch(err => console.error('Error loading indicators:', err));
   }, []);
 
-  // Fetch data on change of selection or range
   useEffect(() => {
     if (!country || !indicator) return;
 
@@ -37,7 +36,7 @@ export default function Dashboard() {
 
     fetchData(country.value, indicator.value, range.start, range.end)
       .then(result => {
-        if (result.length === 0) {
+        if (!result || result.length === 0) {
           setData([]);
           setMessage('No data available for the selected parameters.');
         } else {
@@ -52,7 +51,6 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, [country, indicator, range]);
 
-  // Handle 5-year forecast
   const handleForecast = () => {
     if (!country || !indicator) return;
 
@@ -61,7 +59,7 @@ export default function Dashboard() {
 
     fetchForecast(country.value, indicator.value, 5)
       .then(fc => {
-        if (fc.length === 0) {
+        if (!fc || fc.length === 0) {
           setForecast([]);
           setMessage('No forecast data available.');
         } else {
@@ -81,16 +79,8 @@ export default function Dashboard() {
       <h1>📊 Economic Dashboard</h1>
 
       <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
-        <CountrySelector
-          options={countries}
-          value={country}
-          onChange={setCountry}
-        />
-        <IndicatorSelector
-          options={indicators}
-          value={indicator}
-          onChange={setIndicator}
-        />
+        <CountrySelector options={countries} value={country} onChange={setCountry} />
+        <IndicatorSelector options={indicators} value={indicator} onChange={setIndicator} />
       </div>
 
       <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
@@ -120,13 +110,22 @@ export default function Dashboard() {
         style={{ marginBottom: 20 }}
       >
         {loading ? 'Loading...' : 'Generate 5-Year Forecast'}
-      </
-      button>
+      </button>
+
+      <ExportCSV
+        data={data}
+        fileName="historical_data"
+        disabled={loading || data.length === 0}
+      />
 
       {message && (
         <div style={{ color: 'red', marginBottom: 20 }}>
           {message}
         </div>
+      )}
+
+      {loading && (
+        <p style={{ fontStyle: 'italic', marginBottom: 20 }}>Carregando dados...</p>
       )}
 
       {data.length > 0 && !loading && (
@@ -138,7 +137,7 @@ export default function Dashboard() {
 
       {forecast.length > 0 && !loading && (
         <LineChart
-          data={forecast.map(d => ({ year: d.year, indicator_value: d.forecast }))}
+          data={forecast.map(d => ({ year: d.year, indicator_value: d.forecast ?? d.value }))}
           title="5-Year Forecast"
         />
       )}
