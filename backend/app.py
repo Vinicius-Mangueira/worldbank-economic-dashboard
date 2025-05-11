@@ -44,13 +44,12 @@ async def _refresh_caches():
         _cache_timestamp = time.time()
         logger.info(f"Cache loaded: {len(_countries_cache)} countries and {len(_indicators_cache)} indicators")
     except Exception as e:
-        logger.error(f"Error preloading cache: {e}")
+        logger.error(f"Error preloading cache: {e}", exc_info=True)
 
 
 def _ensure_cache_valid():
-    import time
+    import time, asyncio
     if _cache_timestamp is None or (time.time() - _cache_timestamp) > _CACHE_TTL:
-        import asyncio
         asyncio.run(_refresh_caches())
 
 @app.get("/countries", response_model=List[dict])
@@ -59,9 +58,9 @@ def countries():
     try:
         _ensure_cache_valid()
         return _countries_cache or []
-    except Exception:
+    except Exception as e:
         logger.exception("Failed to fetch countries cache")
-        raise HTTPException(status_code=500, detail="Failed to retrieve country list.")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve country list: {e}")
 
 @app.get("/indicators", response_model=List[dict])
 def indicators():
@@ -69,9 +68,9 @@ def indicators():
     try:
         _ensure_cache_valid()
         return _indicators_cache or []
-    except Exception:
+    except Exception as e:
         logger.exception("Failed to fetch indicators cache")
-        raise HTTPException(status_code=500, detail="Failed to retrieve indicator list.")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve indicator list: {e}")
 
 @app.get("/data", response_model=List[dict])
 def data(
@@ -86,16 +85,22 @@ def data(
     try:
         df = get_indicator_data_df(country, indicator, start, end)
         if df.empty:
-            raise HTTPException(status_code=404, detail="No data found for the given parameters.")
+            raise HTTPException(
+                status_code=404,
+                detail=f"No data found for country='{country}', indicator='{indicator}' in {start}-{end}"
+            )
         return df.to_dict(orient="records")
     except HTTPException:
         raise
     except ValueError as ve:
-        logger.warning(f"ValueError in /data: {ve}")
+        logger.warning(f"ValueError in /data for country={country}, indicator={indicator}: {ve}")
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
-        logger.exception("Unexpected error in /data")
-        raise HTTPException(status_code=500, detail="Internal server error while processing data.")
+        logger.exception(f"Unexpected error in /data for country={country}, indicator={indicator}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error while fetching data for country='{country}', indicator='{indicator}'."
+        )
 
 @app.get("/forecast", response_model=List[dict])
 def forecast(
@@ -114,19 +119,25 @@ def forecast(
         if start > end:
             raise HTTPException(status_code=400, detail="Start year cannot be greater than end year.")
         df_fc = forecast_indicator(country, indicator, start, end, years_ahead, arima_order)
+        if df_fc.empty:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Forecast not available for country='{country}', indicator='{indicator}' with provided data."
+            )
         return df_fc.to_dict(orient="records")
     except HTTPException:
         raise
     except ValueError as ve:
-        # Invalid parameters or insufficient data
+        logger.warning(f"ValueError in /forecast for country={country}, indicator={indicator}: {ve}")
         raise HTTPException(status_code=400, detail=str(ve))
     except NotImplementedError:
-        # Forecast not yet implemented
-        raise HTTPException(status_code=501, detail="Forecast not implemented.")
+        raise HTTPException(status_code=501, detail="Forecast feature not yet implemented.")
     except Exception as e:
-        # Unexpected errors
-        logger.exception(f"Unexpected error in /forecast: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error during forecasting.")
+        logger.exception(f"Unexpected error in /forecast for country={country}, indicator={indicator}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error during forecasting for country='{country}', indicator='{indicator}'."
+        )
 
 if __name__ == "__main__":
     # Run with: uvicorn backend.app:app --reload
