@@ -18,6 +18,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
+  // Load countries and indicators once
   useEffect(() => {
     fetchCountries()
       .then(setCountries)
@@ -28,6 +29,7 @@ export default function Dashboard() {
       .catch(err => console.error('Error loading indicators:', err));
   }, []);
 
+  // Fetch historical data when selections or range change
   useEffect(() => {
     if (!country || !indicator) return;
 
@@ -51,8 +53,9 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, [country, indicator, range]);
 
+  // Handle forecast generation
   const handleForecast = () => {
-    if (!country || !indicator) return;
+    if (!country || !indicator || data.length === 0) return;
 
     setMessage('');
     setLoading(true);
@@ -106,7 +109,7 @@ export default function Dashboard() {
 
       <button
         onClick={handleForecast}
-        disabled={!country || !indicator || loading}
+        disabled={!country || !indicator || loading || data.length === 0}
         style={{ marginBottom: 20 }}
       >
         {loading ? 'Loading...' : 'Generate 5-Year Forecast'}
