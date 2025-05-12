@@ -122,13 +122,7 @@ The dashboard will be available at `http://localhost:3000` and the API at `http:
 * All data is fetched in real time via REST API endpoints.
 * See `data_loader.py` for details on endpoints and data cleaning steps.
 
----
 
-## 📈 Roadmap
-
-*
-
----
 
 ## 🤝 Contributing
 
