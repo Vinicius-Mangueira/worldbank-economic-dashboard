@@ -1,77 +1,167 @@
-# 🌍 World Bank Economic Dashboard
+# World Bank Economic Dashboard
 
-**An interactive data visualization dashboard for analyzing key macroeconomic indicators from the World Bank.**  
-Built with **React**, **Plotly**, **FastAPI**, and **SQLite**.
-
----
-
-## ✨ Features
-
-- 📈 Visualize time series data (GDP, inflation, unemployment, etc.)
-- 🌐 Compare countries or global regions across multiple indicators
-- 🗺️ Interactive map with country-level data
-- 🔮 Forecast trends using time series models (e.g. ARIMA, Prophet)
-- 💾 Export filtered datasets as `.csv`
+An **interactive** and **responsive** data visualization dashboard for exploring key macroeconomic indicators from the World Bank Open Data API. The dashboard allows researchers, policymakers, students, and data enthusiasts to visualize time series trends, compare countries and regions, and export data for further analysis.
 
 ---
 
-## 🛠️ Tech Stack
+## 🚀 Features
 
-### Backend
-- **Python** + **FastAPI**
-- Data processing with **Pandas**
-- Optional **SQLite** database for local persistence
-
-### Frontend
-- **React** + **Plotly.js**
-- Responsive charts and interactive UI
-- Map integration via **Leaflet.js** or **Mapbox**
+* **Time Series Visualization**: Explore indicators such as GDP, inflation, unemployment, and more.
+* **Comparative Analysis**: Compare multiple countries or regions side-by-side.
+* **Interactive Mapping**: View country-level data on a dynamic, zoomable world map.
+* **Forecasting**: Preview short-term forecasts powered by ARIMA or Facebook Prophet models.
+* **Data Export**: Download filtered datasets in CSV format for offline analysis.
+* **Responsive Design**: Accessible on desktop, tablet, and mobile devices.
 
 ---
 
-## 🗂️ Project Structure
+## 🔧 Tech Stack
 
+**Backend**
+
+* **FastAPI**: High-performance API framework for Python.
+* **Pandas**: Data ingestion and preprocessing.
+* **SQLite** (optional): Local persistence of cleaned datasets.
+* **ARIMA & Prophet**: Time series forecasting libraries.
+
+**Frontend**
+
+* **React**: Component-based UI library.
+* **Plotly.js**: Interactive charting library.
+* **Leaflet.js**: Map rendering with tile layers.
+* **Tailwind CSS**: Utility-first styling framework.
+
+---
+
+## 📂 Project Structure
+
+```
 worldbank-economic-dashboard/
 ├── backend/
-│ ├── app.py # FastAPI application
-│ ├── requirements.txt # Python dependencies
-│ └── data_loader.py # ETL scripts for data ingestion
+│   ├── app.py             # FastAPI application entrypoint
+│   ├── data_loader.py     # ETL scripts: fetch & clean World Bank data
+│   ├── models/            # Forecasting model definitions
+│   └── requirements.txt   # Python dependencies
 ├── frontend/
-│ ├── src/ # React + Plotly dashboard UI
-│ └── package.json # Frontend dependencies
+│   ├── public/
+│   ├── src/
+│   │   ├── components/    # Reusable React components (charts, maps, filters)
+│   │   ├── pages/         # Page views (Dashboard, Comparison, Forecast)
+│   │   └── App.jsx        # Main application component
+│   └── package.json       # Frontend dependencies
 ├── database/
-│ └── dataset.db # (Optional) Local SQLite DB
-├── README.md
+│   └── dataset.db         # (Optional) Preloaded SQLite database
+├── .gitignore
 ├── LICENSE
-└── .gitignore
+└── README.md
+```
+
 ---
 
-## 🚀 Getting Started
+## 📥 Installation & Setup
+
+### Prerequisites
+
+* **Python 3.8+**
+* **Node.js 14+ & npm**
+* **Git**
 
 ### 1. Clone the repository
-```bash
-git clone https://github.com/<your-username>/worldbank-economic-dashboard.git
-cd worldbank-economic-dashboard
-2. Run the backend (FastAPI)
-cd backend
-pip install -r requirements.txt
-uvicorn app:app --reload
-3. Run the frontend (React)
 
+```bash
+git clone https://github.com/Vinicius-Mangueira/worldbank-economic-dashboard.git
+cd worldbank-economic-dashboard
+```
+
+### 2. Backend Setup
+
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate       # On Windows: venv\\Scripts\\activate
+pip install -r requirements.txt
+```
+
+1. **Configure Environment**: Copy `.env.example` to `.env` and set any API keys (if required).
+2. **Data Ingestion**: Run the data loader to fetch and store indicators:
+
+   ```bash
+   python data_loader.py
+   ```
+3. **Start the API Server**:
+
+   ```bash
+   uvicorn app:app --reload --host 0.0.0.0 --port 8000
+   ```
+
+### 3. Frontend Setup
+
+```bash
 cd frontend
 npm install
-npm start
+npm run start
+```
 
-🌍 Data Source
-All data is retrieved from the World Bank Open Data API.
+The dashboard will be available at `http://localhost:3000` and the API at `http://localhost:8000`.
 
-Make sure to cite appropriately if you use this data for academic or professional work.
+---
 
-📄 License
-This project is licensed under the MIT License. See the LICENSE file for details.
+## 💡 Usage
 
-👨‍💻 Author
-Developed by Vinícius Mangueira — Student of Data Science & Artificial Intelligence @ UFPB 🇧🇷
+1. **Navigate** to the Dashboard page to see global trends.
+2. **Filter** by indicator (e.g., `GDP`), time range, and countries.
+3. **Compare** multiple selections side-by-side in the Comparison view.
+4. **Switch** to Forecast view to generate short-term projections.
+5. **Export** any filtered dataset using the `Download CSV` button.
 
-⭐️ Contributions
-Pull requests are welcome! Feel free to open issues, submit suggestions, or collaborate on improvements.
+---
+
+## 🗺️ Data Sources
+
+* **World Bank Open Data API**: [https://data.worldbank.org](https://data.worldbank.org)
+* All data is fetched in real time via REST API endpoints.
+* See `data_loader.py` for details on endpoints and data cleaning steps.
+
+---
+
+## 📈 Roadmap
+
+*
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please open issues or pull requests for:
+
+1. Bug reports or feature requests.
+2. Improvements to data processing or visualization.
+3. Documentation enhancements.
+
+Steps to contribute:
+
+1. **Fork** the repo.
+2. **Create** a feature branch (`git checkout -b feature/YourFeature`).
+3. **Commit** your changes (`git commit -m 'Add your feature'`).
+4. **Push** to your fork (`git push origin feature/YourFeature`).
+5. **Open** a Pull Request.
+
+Please adhere to the existing code style and include clear descriptions.
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+
+---
+
+## 📬 Contact
+
+**Vinícius Mangueira**
+Data Science & AI Student @ UFPB
+Email: [viniciusmangueira04@gmail.com](mailto:viniciusmangueira04@gmail.com)
+
+Feel free to reach out for questions or collaboration!
+
+LinkedIn: [https://www.linkedin.com/in/vinicius-mangueira-0b8285224/](https://www.linkedin.com/in/vinicius-mangueira-0b8285224/)
